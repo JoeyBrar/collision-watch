@@ -20,9 +20,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v6
 
-      # CelesTrak refuses repeat downloads for ~2 hours, and runner IPs are
-      # shared. Yesterday's element sets are kept on the data branch so a
-      # refused download falls back to them instead of failing.
+      # reuse yesterday's TLEs if celestrak refuses the download
       - name: Restore cached element sets
         run: |
           mkdir -p .cache
@@ -33,13 +31,11 @@ jobs:
       - name: Screen the next 24 hours
         run: uv run collision-watch --out out --cache .cache
         env:
-          # Optional. Set as repo secrets to screen the full catalog; without
-          # them the run uses CelesTrak's public groups.
+          # optional, full catalog
           SPACETRACK_USER: ${{ secrets.SPACETRACK_USER }}
           SPACETRACK_PASSWORD: ${{ secrets.SPACETRACK_PASSWORD }}
 
-      # The data branch holds only the latest run (one force-pushed commit),
-      # so the repo doesn't grow by a snapshot every day.
+      # data branch keeps only the latest run
       - name: Publish to the data branch
         run: |
           mkdir -p out/cache

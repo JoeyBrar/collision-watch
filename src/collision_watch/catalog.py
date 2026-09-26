@@ -1,11 +1,4 @@
-"""Fetch and parse orbital element sets (TLEs): the full catalog from
-Space-Track when credentials are set, otherwise public groups from CelesTrak.
-
-CelesTrak refuses to re-serve a group it served to the same client within the
-last ~2 hours ("GP data has not updated since your last successful download"),
-so every successful download is cached and the cache is used when a request is
-refused. A day-old TLE is still fine for a 24-hour screen.
-"""
+"""Load TLEs from Space-Track (full catalog) or CelesTrak (public groups)."""
 
 import http.cookiejar
 import os
@@ -18,20 +11,17 @@ from pathlib import Path
 GP_URL = "https://celestrak.org/NORAD/elements/gp.php?GROUP={group}&FORMAT=tle"
 SOCRATES_URL = "https://celestrak.org/SOCRATES/sort-minRange.csv"
 
-# The full catalog (every object on orbit, incl. all debris and rocket bodies)
-# comes from Space-Track when SPACETRACK_USER / SPACETRACK_PASSWORD are set.
-# Space-Track allows at most one GP query per hour; this runs once a day.
-# Redistribution is allowed with citation (USSPACECOM via Space-Track.org).
+# needs SPACETRACK_USER / SPACETRACK_PASSWORD. max 1 gp query/hour
 SPACETRACK_LOGIN = "https://www.space-track.org/ajaxauth/login"
 SPACETRACK_GP = (
     "https://www.space-track.org/basicspacedata/query/class/gp/decay_date/null-val"
     "/epoch/%3Enow-10/orderby/norad_cat_id/format/3le"
 )
 
-# Without an account: active satellites plus the largest public debris groups
-# from CelesTrak.
+# fallback without an account
 GROUPS = ["active", "fengyun-1c-debris", "cosmos-2251-debris", "iridium-33-debris", "cosmos-1408-debris"]
 
+# celestrak won't re-serve a group within ~2h, so downloads are cached
 NOT_UPDATED = "GP data has not updated"
 
 
@@ -58,8 +48,6 @@ def _get(url: str) -> str:
 
 
 def fetch(url: str, cache_file: Path, valid) -> tuple[str, bool]:
-    """Download url, falling back to cache_file if the download is refused or
-    invalid. Returns (text, fresh)."""
     try:
         text = _get(url)
         if valid(text):
@@ -79,7 +67,6 @@ def parse_tles(text: str) -> list[Obj]:
     for i in range(0, len(lines) - 2, 3):
         name, l1, l2 = lines[i], lines[i + 1], lines[i + 2]
         if l1.startswith("1 ") and l2.startswith("2 "):
-            # Space-Track's 3le format prefixes the name line with "0 ".
             out.append(Obj(int(l1[2:7]), name.removeprefix("0 ").strip(), l1, l2))
     return out
 
@@ -131,7 +118,7 @@ def _load_celestrak(cache_dir: Path) -> tuple[list[Obj], dict]:
         status[group] = {"objects": len(group_objs), "fresh": fresh}
         for o in group_objs:
             objs.setdefault(o.norad_id, o)
-        time.sleep(1)  # be polite to CelesTrak
+        time.sleep(1)
     return list(objs.values()), status
 
 

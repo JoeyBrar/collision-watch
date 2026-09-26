@@ -14,8 +14,8 @@ over the next 24 hours, once a day. Results show up at
    hours, in vectorized batches.
 3. **Screening.** Comparing every pair at every step is ~10^8 checks per step. A
    KD-tree over each step's positions returns only pairs within
-   `threshold + v_max * dt / 2` of each other - the farthest two objects can
-   close before the next sample - which cuts the pair checks by several orders
+   `threshold + v_max * dt / 2` of each other (how far two objects can close
+   before the next sample), which cuts the pair checks by several orders
    of magnitude.
 4. **Refinement.** Candidates get a linear time-of-closest-approach estimate from
    relative position and velocity; survivors are refined with full SGP4 to the

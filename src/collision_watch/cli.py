@@ -1,8 +1,4 @@
-"""Daily run: fetch the catalog, screen the next 24 hours, validate against
-SOCRATES, and write the files the website reads.
-
-    uv run collision-watch --out out --cache .cache
-"""
+"""Daily run: fetch, screen, validate, write out/latest.json and out/objects.tle."""
 
 import argparse
 import json
@@ -22,12 +18,12 @@ TOP_N = 50
 
 
 def _constellation(name: str) -> str:
-    """First word of the name ("STARLINK-3104" -> "STARLINK"). Megaconstellation
-    operators coordinate passes between their own satellites, so those are
-    counted separately from passes between different operators or with debris."""
+    # "STARLINK-3104" -> "STARLINK"
     return name.split("-")[0].split()[0].upper()
 
 
+# operators coordinate passes between their own satellites, so those are
+# counted but not listed
 def _same_constellation(a, b) -> bool:
     if a.kind != "payload" or b.kind != "payload":
         return False
@@ -107,7 +103,6 @@ def main() -> None:
         "altitude": _altitude_histogram(objs, start),
     }
     (args.out / "latest.json").write_text(json.dumps(latest, separators=(",", ":")))
-    # Element sets for the website's globe (propagated in the browser).
     (args.out / "objects.tle").write_text("".join(f"{o.name}\n{o.line1}\n{o.line2}\n" for o in objs))
     print(f"[out] wrote {args.out}/latest.json and objects.tle")
 

@@ -1,18 +1,9 @@
-"""All-vs-all conjunction screening over a propagation window.
+"""All-vs-all conjunction screening.
 
-Every object is propagated with SGP4 on a fixed time grid (dt seconds). At
-each step a KD-tree over the positions returns only the pairs that are close
-enough to possibly come within `threshold_km` before the next sample:
-
-    search radius = threshold + v_rel_max * dt / 2
-
-(two objects closing at up to v_rel_max can cover at most v_rel_max * dt/2 of
-extra distance between a sample and the true closest approach). Each candidate
-pair gets a linear time-of-closest-approach estimate from its relative position
-and velocity, and pairs that pass are refined with full SGP4 to the exact TCA.
-
-Pairs moving together (docked vehicles, satellites flying in formation, GEO
-co-location) are not crossings and are skipped via `min_speed_kms`.
+Positions come from SGP4 every dt seconds. At each step a KD-tree finds pairs
+within threshold + v_max * dt / 2 (the most two objects can close before the
+next sample), each pair gets a linear closest-approach estimate, and the ones
+that pass are refined with SGP4.
 """
 
 import time
@@ -25,7 +16,7 @@ from sgp4.api import Satrec, SatrecArray, jday
 
 from collision_watch.catalog import Obj
 
-V_REL_MAX = 16.0  # km/s, above any head-on closing speed in Earth orbit
+V_REL_MAX = 16.0  # km/s, faster than any head-on pass in orbit
 EARTH_RADIUS_KM = 6378.137
 
 
@@ -44,8 +35,8 @@ class ScreenStats:
     objects: int
     steps: int
     dt_s: float
-    candidate_pairs: int  # pair checks actually made
-    naive_pairs: int  # pair checks an all-pairs comparison would make
+    candidate_pairs: int
+    naive_pairs: int
     seconds: float
 
 
@@ -92,10 +83,10 @@ def screen(
             dv2 = np.einsum("ij,ij->i", dv, dv)
             moving = dv2 > min_speed_kms**2
             a, b, dr, dv, dv2 = a[moving], b[moving], dr[moving], dv[moving], dv2[moving]
-            # Linear closest approach within half a step of this sample.
+            # closest approach assuming straight-line motion near this sample
             tstar = np.clip(-np.einsum("ij,ij->i", dr, dv) / dv2, -dt / 2, dt / 2)
             dmin = np.linalg.norm(dr + dv * tstar[:, None], axis=1)
-            close = dmin < threshold_km * 1.5  # margin; exact check after refinement
+            close = dmin < threshold_km * 1.5
             if close.any():
                 hits_i.append(a[close])
                 hits_j.append(b[close])
@@ -108,8 +99,7 @@ def screen(
 
 
 def _collapse(hits_i, hits_j, hits_t, hits_d, dt) -> list[tuple[int, int, float]]:
-    """The same encounter is usually caught at a couple of adjacent samples;
-    keep one estimate per (pair, pass). Passes of one pair are an orbit apart."""
+    # one pass usually shows up at a few neighboring steps; keep the closest
     if not hits_i:
         return []
     i, j, t, d = (np.concatenate(x) for x in (hits_i, hits_j, hits_t, hits_d))
@@ -159,15 +149,14 @@ def _refine(sats, candidates, jd0, fr0, dt, threshold_km) -> list[Encounter]:
 
 
 def naive_seconds_per_step(objs: list[Obj], start_unix: float, threshold_km: float = 5.0) -> float:
-    """Time one all-pairs distance check at a single step (the baseline the
-    KD-tree replaces), for the benchmark line."""
+    # time the brute-force all-pairs check for one step, for the benchmark
     sats = SatrecArray([Satrec.twoline2rv(o.line1, o.line2) for o in objs])
     jd, fr = _jd_grid(start_unix, 1, 1.0)
     err, r, _ = sats.sgp4(jd, fr)
     pos = r[(err[:, 0] == 0) & np.isfinite(r[:, 0, 0]), 0]
     t0 = time.perf_counter()
     close = 0
-    for k in range(0, len(pos), 512):  # chunked so memory stays bounded
+    for k in range(0, len(pos), 512):
         d = np.linalg.norm(pos[k : k + 512, None, :] - pos[None, :, :], axis=2)
         close += int((d < threshold_km).sum())
     return time.perf_counter() - t0

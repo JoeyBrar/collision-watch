@@ -1,16 +1,8 @@
-"""Compare our encounters against CelesTrak's SOCRATES conjunction report.
+"""Check results against CelesTrak's SOCRATES report.
 
-SOCRATES screens the full public catalog over 7 days (5 km threshold) from
-somewhat older element sets, so only its events that fall inside our window,
-involve two objects we screened, and are real crossings (>= min_speed_kms)
-are comparable. A SOCRATES event counts as matched when we report the same
-pair with a TCA within `tca_tol_s` seconds.
-
-SOCRATES' element sets are a day or two older than ours, and orbits move in
-that time (Starlink maneuvers, drag), so many of its events simply aren't close
-approaches anymore. Each run audits a sample of the unmatched events: using our
-element sets, how close does the pair actually get near SOCRATES' TCA? If that
-is under the threshold, the screen missed it; otherwise the data moved on.
+Only SOCRATES events inside our window, between two objects we screened, with
+real relative speed are comparable. SOCRATES uses older TLEs, so for a sample of
+the ones we don't report, check how close the pair actually gets with our data.
 """
 
 import csv

@@ -1,0 +1,48 @@
+name: Daily screen
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-screen
+  cancel-in-progress: false
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      # CelesTrak refuses repeat downloads for ~2 hours, and runner IPs are
+      # shared. Yesterday's element sets are kept on the data branch so a
+      # refused download falls back to them instead of failing.
+      - name: Restore cached element sets
+        run: |
+          mkdir -p .cache
+          if git fetch --depth 1 origin data 2>/dev/null; then
+            git archive FETCH_HEAD cache | tar -x -C .cache --strip-components=1 || true
+          fi
+
+      - name: Screen the next 24 hours
+        run: uv run collision-watch --out out --cache .cache
+
+      # The data branch holds only the latest run (one force-pushed commit),
+      # so the repo doesn't grow by a snapshot every day.
+      - name: Publish to the data branch
+        run: |
+          mkdir -p out/cache
+          cp .cache/*.tle .cache/socrates.csv out/cache/ 2>/dev/null || true
+          cd out
+          git init -q -b data
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Screen $(date -u +%Y-%m-%d)"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data

@@ -1,0 +1,21 @@
+[project]
+name = "collision-watch"
+version = "0.1.0"
+description = "Daily all-vs-all conjunction screening of the public satellite catalog"
+readme = "README.md"
+authors = [
+    { name = "JoeyBrar", email = "jorabrar2007@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "numpy>=2.5.3",
+    "scipy>=1.18.1",
+    "sgp4>=2.27",
+]
+
+[project.scripts]
+collision-watch = "collision_watch.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.6,<0.12.0"]
+build-backend = "uv_build"

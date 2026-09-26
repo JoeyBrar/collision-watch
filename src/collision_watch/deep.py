@@ -66,17 +66,11 @@ def people() -> dict:
         key = STATIONS.get((e.get("spacestation") or {}).get("name"), "other")
         aboard.setdefault(key, []).extend(c["astronaut"]["name"] for c in e.get("crew", []))
     listed = {n for names in aboard.values() for n in names}
-    up = json.loads(_get(f"{LL2}/astronauts/?in_space=true&limit=50"))["results"]
+    up = json.loads(_get(f"{LL2}/astronauts/?in_space=true&limit=50&mode=list"))["results"]
     other = [a["name"] for a in up if a["name"] not in listed]
     if other:
         aboard.setdefault("other", []).extend(other)
-    # two-letter country code per person, for flags
-    country = {
-        a["name"]: a["nationality"][0]["alpha_2_code"]
-        for a in up
-        if a.get("nationality") and a["nationality"][0].get("alpha_2_code", "??") != "??"
-    }
-    return {"generated_at": int(time.time()), "aboard": aboard, "country": country}
+    return {"generated_at": int(time.time()), "aboard": aboard}
 
 
 def main() -> None:

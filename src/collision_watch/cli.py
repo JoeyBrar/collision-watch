@@ -21,6 +21,19 @@ HOURS = 24.0
 TOP_N = 50
 
 
+def _constellation(name: str) -> str:
+    """First word of the name ("STARLINK-3104" -> "STARLINK"). Megaconstellation
+    operators coordinate passes between their own satellites, so those are
+    counted separately from passes between different operators or with debris."""
+    return name.split("-")[0].split()[0].upper()
+
+
+def _same_constellation(a, b) -> bool:
+    if a.kind != "payload" or b.kind != "payload":
+        return False
+    return _constellation(a.name) == _constellation(b.name)
+
+
 def _altitude_histogram(objs, start_unix) -> dict:
     arr = SatrecArray([Satrec.twoline2rv(o.line1, o.line2) for o in objs])
     jd, fr = _jd_grid(start_unix, 1, 1.0)
@@ -62,6 +75,9 @@ def main() -> None:
         o = objs[i]
         return {"id": o.norad_id, "name": o.name, "kind": o.kind}
 
+    cross = [e for e in encounters if not _same_constellation(objs[e.i], objs[e.j])]
+    same = Counter(_constellation(objs[e.i].name) for e in encounters if _same_constellation(objs[e.i], objs[e.j]))
+
     latest = {
         "generated_at": int(time.time()),
         "window": {"start": int(start), "hours": args.hours},
@@ -76,6 +92,7 @@ def main() -> None:
         },
         "validation": validation,
         "encounters_total": len(encounters),
+        "same_constellation": dict(same.most_common(5)),
         "encounters": [
             {
                 "tca": int(start + e.tca),
@@ -85,7 +102,7 @@ def main() -> None:
                 "speed_kms": round(e.speed_kms, 2),
                 "alt_km": round(e.alt_km),
             }
-            for e in encounters[:TOP_N]
+            for e in cross[:TOP_N]
         ],
         "altitude": _altitude_histogram(objs, start),
     }

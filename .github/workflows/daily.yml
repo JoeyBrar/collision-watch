@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 concurrency:
   group: daily-screen
@@ -47,3 +48,9 @@ jobs:
           git add -A
           git commit -q -m "Screen $(date -u +%Y-%m-%d)"
           git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" data
+
+      # GitHub disables schedules after 60 days without repo activity; re-enabling resets that
+      - name: Keep the schedule alive
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/daily.yml/enable"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

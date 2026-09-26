@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 collision-watch = "collision_watch.cli:main"
+deep-space = "collision_watch.deep:main"
 
 [build-system]
 requires = ["uv_build>=0.11.6,<0.12.0"]

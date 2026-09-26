@@ -36,11 +36,15 @@ jobs:
           SPACETRACK_USER: ${{ secrets.SPACETRACK_USER }}
           SPACETRACK_PASSWORD: ${{ secrets.SPACETRACK_PASSWORD }}
 
+      - name: Deep-space spacecraft from JPL Horizons
+        run: uv run deep-space --out out --cache .cache
+        continue-on-error: true
+
       # data branch keeps only the latest run
       - name: Publish to the data branch
         run: |
           mkdir -p out/cache
-          cp .cache/*.tle .cache/socrates.csv out/cache/ 2>/dev/null || true
+          cp .cache/*.tle .cache/socrates.csv .cache/deep.json out/cache/ 2>/dev/null || true
           cd out
           git init -q -b data
           git config user.name "github-actions[bot]"

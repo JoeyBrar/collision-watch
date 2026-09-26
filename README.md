@@ -36,6 +36,10 @@ uv run collision-watch --out out --cache .cache
 Writes `out/latest.json` (stats, validation, closest approaches, altitude
 histogram) and `out/objects.tle` (element sets for the site's globe).
 
+`uv run deep-space --out out` writes `out/deep.json`: three days of geocentric
+positions for Voyager 1/2, JWST and other deep-space craft from
+[JPL Horizons](https://ssd.jpl.nasa.gov/horizons/), for zooming out on the globe.
+
 A GitHub Action runs this daily at 07:00 UTC and force-pushes the output to the
 `data` branch.
 

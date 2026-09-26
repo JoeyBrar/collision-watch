@@ -5,11 +5,23 @@ somewhat older element sets, so only its events that fall inside our window,
 involve two objects we screened, and are real crossings (>= min_speed_kms)
 are comparable. A SOCRATES event counts as matched when we report the same
 pair with a TCA within `tca_tol_s` seconds.
+
+SOCRATES' element sets are a day or two older than ours, and orbits move in
+that time (Starlink maneuvers, drag), so many of its events simply aren't close
+approaches anymore. Each run audits a sample of the unmatched events: using our
+element sets, how close does the pair actually get near SOCRATES' TCA? If that
+is under the threshold, the screen missed it; otherwise the data moved on.
 """
 
 import csv
 import io
+import random
+import time
 from datetime import datetime, timezone
+
+import numpy as np
+from scipy.optimize import minimize_scalar
+from sgp4.api import Satrec, jday
 
 from collision_watch.catalog import Obj
 from collision_watch.screen import Encounter
@@ -28,6 +40,8 @@ def compare(
     min_speed_kms: float = 1.0,
     tca_tol_s: float = 60.0,
     top: int = 20,
+    threshold_km: float = 5.0,
+    audit_n: int = 200,
 ) -> dict:
     ids = {o.norad_id for o in objs}
     end = start_unix + hours * 3600
@@ -51,6 +65,8 @@ def compare(
     matched = [(ev, match(ev)) for ev in ref]
     hits = [(ev, m) for ev, m in matched if m is not None]
     top_ref = matched[:top]
+    missed = [ev for ev, m in matched if m is None]
+    audit = _audit(random.Random(0).sample(missed, min(audit_n, len(missed))), objs, threshold_km)
     return {
         "comparable_events": len(ref),
         "matched": len(hits),
@@ -60,4 +76,30 @@ def compare(
             sorted(abs(ev[3] - m) for ev, m in hits)[len(hits) // 2] if hits else None
         ),
         "tca_tolerance_s": tca_tol_s,
+        "audit": audit,
+    }
+
+
+def _audit(events, objs: list[Obj], threshold_km: float) -> dict:
+    sats = {o.norad_id: Satrec.twoline2rv(o.line1, o.line2) for o in objs}
+
+    def pos(sat, t):
+        g = time.gmtime(t)
+        jd, fr = jday(g.tm_year, g.tm_mon, g.tm_mday, g.tm_hour, g.tm_min, g.tm_sec + t % 1)
+        e, r, _ = sat.sgp4(jd, fr)
+        return None if e else np.asarray(r)
+
+    def dist(a, b, t):
+        ra, rb = pos(sats[a], t), pos(sats[b], t)
+        return np.inf if ra is None or rb is None else float(np.linalg.norm(ra - rb))
+
+    closest = []
+    for a, b, t, _ in events:
+        res = minimize_scalar(lambda x: dist(a, b, x), bounds=(t - 120, t + 120), method="bounded")
+        closest.append(res.fun)
+    closest = [c for c in closest if np.isfinite(c)]
+    return {
+        "sampled": len(closest),
+        "screen_missed": sum(1 for c in closest if c < threshold_km),
+        "median_separation_km": round(float(np.median(closest)), 1) if closest else None,
     }

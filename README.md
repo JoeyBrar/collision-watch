@@ -6,8 +6,10 @@ over the next 24 hours, once a day. Results show up at
 
 ## How it works
 
-1. **Catalog.** Element sets (TLEs) for all active satellites plus the largest
-   debris groups come from [CelesTrak](https://celestrak.org).
+1. **Catalog.** Element sets (TLEs) for every object on orbit come from
+   [Space-Track.org](https://www.space-track.org) (USSPACECOM) when
+   `SPACETRACK_USER` / `SPACETRACK_PASSWORD` are set; otherwise all active
+   satellites plus the largest debris groups from [CelesTrak](https://celestrak.org).
 2. **Propagation.** Every object is propagated with SGP4 every 10 seconds for 24
    hours, in vectorized batches.
 3. **Screening.** Comparing every pair at every step is ~10^8 checks per step. A
@@ -41,5 +43,8 @@ A GitHub Action runs this daily at 07:00 UTC and force-pushes the output to the
 
 - TLE/SGP4 accuracy is on the order of a kilometer, so miss distances are
   screening estimates, not collision probabilities.
-- The public CelesTrak groups cover roughly half of the ~30k tracked objects;
-  the full catalog requires a Space-Track account.
+- Without Space-Track credentials, the CelesTrak groups cover roughly 60% of
+  tracked objects.
+
+Orbital data: USSPACECOM via [Space-Track.org](https://www.space-track.org) and
+[CelesTrak](https://celestrak.org).

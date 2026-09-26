@@ -32,6 +32,11 @@ jobs:
 
       - name: Screen the next 24 hours
         run: uv run collision-watch --out out --cache .cache
+        env:
+          # Optional. Set as repo secrets to screen the full catalog; without
+          # them the run uses CelesTrak's public groups.
+          SPACETRACK_USER: ${{ secrets.SPACETRACK_USER }}
+          SPACETRACK_PASSWORD: ${{ secrets.SPACETRACK_PASSWORD }}
 
       # The data branch holds only the latest run (one force-pushed commit),
       # so the repo doesn't grow by a snapshot every day.

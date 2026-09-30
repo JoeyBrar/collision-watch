@@ -31,6 +31,37 @@ CRAFT = [
     (-49, "lucy", "touring the asteroids that share jupiter's orbit"),
     (-121, "bepicolombo", "esa/jaxa, arriving at mercury"),
     (-143205, "tesla roadster", "launched on the first falcon heavy in 2018, still orbiting the sun"),
+    # mars
+    (-76, "curiosity", "rover in gale crater since 2012"),
+    (499, "perseverance", "rover in jezero crater since 2021"),  # horizons ends at landing, so use mars
+    (-74, "mars reconnaissance orbiter", "orbiting mars since 2006"),
+    (-53, "mars odyssey", "orbiting mars since 2001"),
+    (-41, "mars express", "esa, orbiting mars since 2003"),
+    (-143, "exomars tgo", "esa/roscosmos, orbiting mars since 2016"),
+    (-62, "hope", "uae, orbiting mars since 2021"),
+    # moon
+    (-85, "lunar reconnaissance orbiter", "mapping the moon since 2009"),
+    (-152, "chandrayaan-2", "isro, orbiting the moon since 2019"),
+    (-155, "danuri", "korea's lunar orbiter, since 2022"),
+    (301, "apollo landers", "six landing sites and three rovers left on the moon, 1969-72"),
+    # sun-earth l1 and l2
+    (-21, "soho", "watching the sun from l1 since 1996"),
+    (-92, "ace", "measuring the solar wind at l1 since 1997"),
+    (-78, "dscovr", "photographs the whole sunlit earth from l1"),
+    (-8, "wind", "solar wind at l1 since 1994"),
+    (-156, "aditya-l1", "isro's solar observatory at l1"),
+    (-680, "euclid", "esa, mapping dark matter from l2"),
+    # orbiting the sun
+    (-139479, "gaia", "esa, mapped two billion stars, retired 2025"),
+    (-144, "solar orbiter", "esa, first close-up views of the sun's poles"),
+    (-234, "stereo-a", "watching the sun from ahead of earth"),
+    (-64, "osiris-apex", "brought back bennu samples, now headed for apophis"),
+    (-37, "hayabusa2", "jaxa, returned ryugu samples, on to another asteroid"),
+    (-227, "kepler", "found thousands of exoplanets, retired 2018"),
+    (-79, "spitzer", "infrared telescope, retired 2020"),
+    # leaving the solar system
+    (-23, "pioneer 10", "launched 1972, last heard from in 2003"),
+    (-24, "pioneer 11", "launched 1973, last heard from in 1995"),
 ]
 
 
